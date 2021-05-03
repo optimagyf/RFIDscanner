@@ -1,3 +1,53 @@
+/****************************************************************************************************************************
+  ConfigOnSwitch.ino
+  For ESP8266 / ESP32 boards
+  
+  ESP_WiFiManager is a library for the ESP8266/ESP32 platform (https://github.com/esp8266/Arduino) to enable easy
+  configuration and reconfiguration of WiFi credentials using a Captive Portal. Inspired by:
+  http://www.esp8266.com/viewtopic.php?f=29&t=2520
+  https://github.com/chriscook8/esp-arduino-apboot
+  https://github.com/esp8266/Arduino/blob/master/libraries/DNSServer/examples/CaptivePortalAdvanced/
+  
+  Modified from Tzapu https://github.com/tzapu/WiFiManager
+  and from Ken Taylor https://github.com/kentaylor
+  
+  Built by Khoi Hoang https://github.com/khoih-prog/ESP_WiFiManager
+  Licensed under MIT license
+  Version: 1.3.0
+
+  Version Modified By   Date      Comments
+  ------- -----------  ---------- -----------
+  1.0.0   K Hoang      07/10/2019 Initial coding
+  1.0.1   K Hoang      13/12/2019 Fix bug. Add features. Add support for ESP32
+  1.0.2   K Hoang      19/12/2019 Fix bug thatkeeps ConfigPortal in endless loop if Portal/Router SSID or Password is NULL.
+  1.0.3   K Hoang      05/01/2020 Option not displaying AvailablePages in Info page. Enhance README.md. Modify examples
+  1.0.4   K Hoang      07/01/2020 Add RFC952 setHostname feature.
+  1.0.5   K Hoang      15/01/2020 Add configurable DNS feature. Thanks to @Amorphous of https://community.blynk.cc
+  1.0.6   K Hoang      03/02/2020 Add support for ArduinoJson version 6.0.0+ ( tested with v6.14.1 )
+  1.0.7   K Hoang      13/04/2020 Reduce start time, fix SPIFFS bug in examples, update README.md
+  1.0.8   K Hoang      10/06/2020 Fix STAstaticIP issue. Restructure code. Add LittleFS support for ESP8266 core 2.7.1+
+  1.0.9   K Hoang      29/07/2020 Fix ESP32 STAstaticIP bug. Permit changing from DHCP <-> static IP using Config Portal.
+                                  Add, enhance examples (fix MDNS for ESP32)
+  1.0.10  K Hoang      08/08/2020 Add more features to Config Portal. Use random WiFi AP channel to avoid conflict.
+  1.0.11  K Hoang      17/08/2020 Add CORS feature. Fix bug in softAP, autoConnect, resetSettings.
+  1.1.0   K Hoang      28/08/2020 Add MultiWiFi feature to autoconnect to best WiFi at runtime
+  1.1.1   K Hoang      30/08/2020 Add setCORSHeader function to allow flexible CORS. Fix typo and minor improvement.
+  1.1.2   K Hoang      17/08/2020 Fix bug. Add example.
+  1.2.0   K Hoang      09/10/2020 Restore cpp code besides Impl.h code to use if linker error. Fix bug.
+  1.3.0   K Hoang      04/12/2020 Add LittleFS support to ESP32 using LITTLEFS Library
+ *****************************************************************************************************************************/
+/****************************************************************************************************************************
+   This example will open a configuration portal when no WiFi configuration has been previously entered or when a button is pushed.
+   It is the easiest scenario for configuration but requires a pin and a button on the ESP8266 device.
+   The Flash button is convenient for this on NodeMCU devices.
+
+   Also in this example a password is required to connect to the configuration portal
+   network. This is inconvenient but means that only those who know the password or those
+   already connected to the target WiFi network can access the configuration portal and
+   the WiFi network credentials will be sent from the browser over an encrypted connection and
+   can not be read by observers.
+ *****************************************************************************************************************************/
+
 /*
  * --------------------------------------------------------------------------------------------------------------------
  * Example sketch/program showing how to read data from a PICC to serial.
@@ -36,84 +86,48 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <MFRC522.h>
-
-#define ESP8266 1
 #include <ESP8266HTTPClient.h>
-#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
-// #define SERVER_IP "192.168.8.100:3000"
-// #define SERVER_IP "192.168.30.136:3000"
-#define SERVER_IP "192.168.43.172:3000"
+#include "wifiUtils.h"
 
-// #define RST_PIN         9          // Configurable, see typical pin layout above
-// #define SS_PIN          10         // Configurable, see typical pin layout above
-
-// #define RST_PIN 18 // D3
-// #define SS_PIN 17  // D4
-// Documentation link
-// https://esp8266-shop.com/esp8266-guide/esp8266-nodemcu-pinout/
-#define RST_PIN D3 // 0
-#define SS_PIN D4  // 2
+#define RST_PIN PIN_D3
+#define SS_PIN PIN_D4
 
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create MFRC522 instance
 
-// const char *ssid = STASSID;
-// const char *password = STAPSK;
+bool triggerPortalConfiguration = false;
 
-// byte newUid[4] = {0x71, 0x85, 0x13, 0x09};
-
-bool initialisation = true;
+void ICACHE_RAM_ATTR handleInterrupt()
+{
+  triggerPortalConfiguration = true;
+}
 
 void setup()
 {
-  Serial.begin(115200); // Initialize serial communications with the PC
+  // put your setup code here, to run once:
+  // initialize the LED digital pin as an output.
+  pinMode(PIN_LED, OUTPUT);
+  pinMode(PIN_D1, INPUT_PULLUP);
+
+  Serial.begin(115200);
   while (!Serial)
-    ; // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
-  delay(2000);
+    ;
+
   Serial.println("Begin setup");
-  SPI.begin();                       // Init SPI bus
-  mfrc522.PCD_Init();                // Init MFRC522
-  delay(4);                          // Optional delay. Some board do need more time after init to be ready, see Readme
-  mfrc522.PCD_DumpVersionToSerial(); // Show details of PCD - MFRC522 Card Reader details
+  setupWifi();
+
+  delay(2000);
+  // Init SPI bus
+  SPI.begin();
+  // Init MFRC522
+  mfrc522.PCD_Init();
+  // Optional delay. Some board do need more time after init to be ready, see Readme
+  delay(4);
+  // Show details of PCD - MFRC522 Card Reader details
+  mfrc522.PCD_DumpVersionToSerial();
   Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
 
-  /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-     would try to act as both a client and an access-point and could cause
-     network-issues with your other WiFi-devices on your WiFi-network. */
-  WiFi.mode(WIFI_STA);
-
-  // WiFiManager, Local intialization. Once its business is done,
-  // there is no need to keep it around
-  WiFiManager wm;
-
-  // Configure a static IP address for the ESP card in Access Point mode
-  // wm.setAPStaticIPConfig(ip, gateway, subnet);
-  wm.setAPStaticIPConfig(IPAddress(192, 168, 5, 1),
-                         IPAddress(192, 168, 5, 1),
-                         IPAddress(255, 255, 255, 0));
-
-  //reset settings - wipe credentials for testing
-  wm.resetSettings();
-
-  // Automatically connect using saved credentials,
-  // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
-  // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
-  // then goes into a blocking loop awaiting configuration and will return success result
-
-  bool res = wm.autoConnect("AutoConnectAP"); // anonymous ap
-
-  if (!res)
-  {
-    Serial.println("Failed to connect");
-    // ESP.restart();
-  }
-  else
-  {
-    //if you get here you have connected to the WiFi
-    Serial.println("connected...yeey :)");
-  }
-
-  Serial.println("End setup");
+  attachInterrupt(digitalPinToInterrupt(PIN_D1), handleInterrupt, FALLING);
 }
 
 String getUID(MFRC522::Uid *uid)
@@ -127,17 +141,55 @@ String getUID(MFRC522::Uid *uid)
   return res;
 }
 
-void loop()
+const String SERVER_IP("192.168.8.100:3000");
+
+void doGetnSendUID()
 {
-  if (initialisation)
+  WiFiClient client;
+  HTTPClient http;
+
+  Serial.print("[HTTP] begin...\n");
+  // configure traged server and url
+  String serverEndPoint = "http://" + SERVER_IP + "/postplain/";
+  Serial.print("[HTTP] serverEndPoint: " + serverEndPoint + "\n");
+  http.setReuse(true);
+  http.begin(client, serverEndPoint);
+  http.addHeader("Content-Type", "application/json");
+
+  // start connection and send HTTP header and body
+  String message = "{\"uid\":" + getUID(&(mfrc522.uid)) + "}";
+  Serial.print("[HTTP] message: " + message + "\n");
+  int httpCode = http.POST(message);
+  String payload = http.getString();
+  Serial.print("[HTTP] payload: " + payload + "\n");
+
+  // httpCode will be negative on error
+  if (httpCode > 0)
   {
-    Serial.println("IP address: " + WiFi.localIP().toString());
-    initialisation = !initialisation;
+    // HTTP header has been send and Server response header has been handled
+    Serial.printf("[HTTP] POST succeeded\n");
+  }
+  else
+  {
+    Serial.printf("[POST FAILED] httpCode: %d\n", httpCode);
+    Serial.printf("[POST FAILED] error: %s\n", http.errorToString(httpCode).c_str());
   }
 
-  // Serial.println("Begin loop");
-  // delay(1000);
-  // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
+  http.end();
+}
+
+void getnSendUID()
+{
+  static ulong checkgetuid_timeout = 0;
+
+  static ulong current_millis;
+
+#define GETUID_INTERVAL 1000L
+
+  current_millis = millis();
+
+  // Reset the loop if no new card present on the sensor/reader.
+  // This saves the entire process when idle.
   if (!mfrc522.PICC_IsNewCardPresent())
   {
     return;
@@ -149,41 +201,28 @@ void loop()
     return;
   }
 
-  // wait for WiFi connection
+  // Check RFID every GETUID_INTERVAL (1) seconds.
+  if ((current_millis > checkgetuid_timeout) || (checkgetuid_timeout == 0))
+  {
+    doGetnSendUID();
+    checkgetuid_timeout = current_millis + GETUID_INTERVAL;
+  }
+}
+
+void loop()
+{
+  // is configuration portal requested?
+  if (triggerPortalConfiguration)
+  {
+    triggerPortalConfiguration = false;
+    requestPortalConfiguration();
+  }
+
+  // put your main code here, to run repeatedly
+  checkWifiStatus();
+
   if (WiFi.status() == WL_CONNECTED)
   {
-
-    WiFiClient client;
-    HTTPClient http;
-
-    Serial.print("[HTTP] begin...\n");
-    // configure traged server and url
-    String serverEndPoint = "http://" SERVER_IP "/postplain/";
-    Serial.print("[HTTP] serverEndPoint: " + serverEndPoint + "\n");
-    http.setReuse(true);
-    http.begin(client, serverEndPoint);
-    http.addHeader("Content-Type", "application/json");
-
-    // start connection and send HTTP header and body
-    String message = "{\"uid\":" + getUID(&(mfrc522.uid)) + "}";
-    Serial.print("[HTTP] message: " + message + "\n");
-    int httpCode = http.POST(message);
-    String payload = http.getString();
-    Serial.print("[HTTP] payload: " + payload + "\n");
-
-    // httpCode will be negative on error
-    if (httpCode > 0)
-    {
-      // HTTP header has been send and Server response header has been handled
-      Serial.printf("[HTTP] POST succeeded\n");
-    }
-    else
-    {
-      Serial.printf("[POST FAILED] httpCode: %d\n", httpCode);
-      Serial.printf("[POST FAILED] error: %s\n", http.errorToString(httpCode).c_str());
-    }
-
-    http.end();
-    delay(1000);
+    getnSendUID();
   }
 }
