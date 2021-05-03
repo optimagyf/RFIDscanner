@@ -82,7 +82,18 @@
  * SPI MISO    MISO         D6                 12 / ICSP-1   50        D12        ICSP-1           14
  * SPI SCK     SCK          D5                 13 / ICSP-3   52        D13        ICSP-3           15
  */
+
+#include <Arduino.h>
+#include <SPI.h>
+#include <MFRC522.h>
+#include <ESP8266HTTPClient.h>
+
 #include "wifiUtils.h"
+
+#define RST_PIN PIN_D3
+#define SS_PIN PIN_D4
+
+MFRC522 mfrc522(SS_PIN, RST_PIN); // Create MFRC522 instance
 
 bool triggerPortalConfiguration = false;
 
@@ -102,10 +113,35 @@ void setup()
   while (!Serial)
     ;
 
+  Serial.println("Begin setup");
   setupWifi();
+
+  delay(2000);
+  // Init SPI bus
+  SPI.begin();
+  // Init MFRC522
+  mfrc522.PCD_Init();
+  // Optional delay. Some board do need more time after init to be ready, see Readme
+  delay(4);
+  // Show details of PCD - MFRC522 Card Reader details
+  mfrc522.PCD_DumpVersionToSerial();
+  Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
 
   attachInterrupt(digitalPinToInterrupt(PIN_D1), handleInterrupt, FALLING);
 }
+
+String getUID(MFRC522::Uid *uid)
+{
+  String res = "";
+
+  for (byte i = 0; i < uid->size; i++)
+  {
+    res += String(uid->uidByte[i], HEX);
+  }
+  return res;
+}
+
+const String SERVER_IP("192.168.8.100:3000");
 
 void loop()
 {
@@ -118,4 +154,52 @@ void loop()
 
   // put your main code here, to run repeatedly
   checkWifiStatus();
+
+  // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
+  if (!mfrc522.PICC_IsNewCardPresent())
+  {
+    return;
+  }
+
+  // Select one of the cards
+  if (!mfrc522.PICC_ReadCardSerial())
+  {
+    return;
+  }
+
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    WiFiClient client;
+    HTTPClient http;
+
+    Serial.print("[HTTP] begin...\n");
+    // configure traged server and url
+    String serverEndPoint = "http://" + SERVER_IP + "/postplain/";
+    Serial.print("[HTTP] serverEndPoint: " + serverEndPoint + "\n");
+    http.setReuse(true);
+    http.begin(client, serverEndPoint);
+    http.addHeader("Content-Type", "application/json");
+
+    // start connection and send HTTP header and body
+    String message = "{\"uid\":" + getUID(&(mfrc522.uid)) + "}";
+    Serial.print("[HTTP] message: " + message + "\n");
+    int httpCode = http.POST(message);
+    String payload = http.getString();
+    Serial.print("[HTTP] payload: " + payload + "\n");
+
+    // httpCode will be negative on error
+    if (httpCode > 0)
+    {
+      // HTTP header has been send and Server response header has been handled
+      Serial.printf("[HTTP] POST succeeded\n");
+    }
+    else
+    {
+      Serial.printf("[POST FAILED] httpCode: %d\n", httpCode);
+      Serial.printf("[POST FAILED] error: %s\n", http.errorToString(httpCode).c_str());
+    }
+
+    http.end();
+    // delay(1000);
+  }
 }
