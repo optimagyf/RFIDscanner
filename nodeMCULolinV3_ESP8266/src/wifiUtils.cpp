@@ -18,10 +18,10 @@ IPAddress netMask = IPAddress(255, 255, 255, 0);
 #ifdef ESP32
 IPAddress stationIP = IPAddress(192, 168, 2, 232);
 #else
-IPAddress stationIP = IPAddress(192, 168, 2, 186);
+IPAddress stationIP = IPAddress(192, 168, 1, 1);
 #endif
 
-IPAddress gatewayIP = IPAddress(192, 168, 2, 1);
+IPAddress gatewayIP = IPAddress(192, 168, 1, 1);
 IPAddress netMask = IPAddress(255, 255, 255, 0);
 #endif
 
