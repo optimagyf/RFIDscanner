@@ -149,14 +149,16 @@ FS *filesystem = &SPIFFS;
 #define PIN_SDA 21 // Pin SDA mapped to pin GPIO21/SDA of ESP32
 #else
 //PIN_D0 can't be used for PWM/I2C
-#define PIN_D0 16  // Pin D0 mapped to pin GPIO16/USER/WAKE of ESP8266. \
-                   // This pin is also used for Onboard-Blue LED.       \
-                   // PIN_D0 = 0 => LED ON
-#define PIN_D1 5   // Pin D1 mapped to pin GPIO5 of ESP8266
-#define PIN_D2 4   // Pin D2 mapped to pin GPIO4 of ESP8266
-#define PIN_D3 0   // Pin D3 mapped to pin GPIO0/FLASH of ESP8266
-#define PIN_D4 2   // Pin D4 mapped to pin GPIO2/TXD1 of ESP8266, \
-                   // NodeMCU and WeMoS, control on-board LED
+// Pin D0 mapped to pin GPIO16/USER/WAKE of ESP8266.
+// This pin is also used for Onboard-Blue LED.
+// PIN_D0 = 0 => LED ON
+#define PIN_D0 16
+#define PIN_D1 5 // Pin D1 mapped to pin GPIO5 of ESP8266
+#define PIN_D2 4 // Pin D2 mapped to pin GPIO4 of ESP8266
+#define PIN_D3 0 // Pin D3 mapped to pin GPIO0/FLASH of ESP8266
+// Pin D4 mapped to pin GPIO2/TXD1 of ESP8266,
+// NodeMCU and WeMoS, control on-board LED
+#define PIN_D4 2
 #define PIN_D5 14  // Pin D5 mapped to pin GPIO14/HSCLK of ESP8266
 #define PIN_D6 12  // Pin D6 mapped to pin GPIO12/HMISO of ESP8266
 #define PIN_D7 13  // Pin D7 mapped to pin GPIO13/RXD2/HMOSI of ESP8266
@@ -272,11 +274,12 @@ typedef struct
 #define USE_DHCP_IP true
 #else
                                  // You can select DHCP or Static IP here
-#define USE_DHCP_IP true
-                                 //#define USE_DHCP_IP     false
+                                 // #define USE_DHCP_IP true
+#define USE_DHCP_IP false
 #endif
 
-#define USE_CONFIGURABLE_DNS true
+// #define USE_CONFIGURABLE_DNS true
+#define USE_CONFIGURABLE_DNS false
 
 // #include <ESP_WiFiManager.h> //https://github.com/khoih-prog/ESP_WiFiManager
 

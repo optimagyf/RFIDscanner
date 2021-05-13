@@ -18,10 +18,10 @@ IPAddress netMask = IPAddress(255, 255, 255, 0);
 #ifdef ESP32
 IPAddress stationIP = IPAddress(192, 168, 2, 232);
 #else
-IPAddress stationIP = IPAddress(192, 168, 2, 186);
+IPAddress stationIP = IPAddress(192, 168, 1, 1);
 #endif
 
-IPAddress gatewayIP = IPAddress(192, 168, 2, 1);
+IPAddress gatewayIP = IPAddress(192, 168, 1, 1);
 IPAddress netMask = IPAddress(255, 255, 255, 0);
 #endif
 
@@ -29,7 +29,7 @@ IPAddress netMask = IPAddress(255, 255, 255, 0);
 
 // SSID and PW for Config Portal
 String ssid = "ESP_" + String(ESP_getChipId(), HEX);
-const char *password = "your_password";
+const char *password = "optima42";
 
 // SSID and PW for your Router
 String Router_SSID;
