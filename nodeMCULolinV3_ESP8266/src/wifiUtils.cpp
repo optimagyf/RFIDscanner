@@ -29,7 +29,7 @@ IPAddress netMask = IPAddress(255, 255, 255, 0);
 
 // SSID and PW for Config Portal
 String ssid = "ESP_" + String(ESP_getChipId(), HEX);
-const char *password = "your_password";
+const char *password = "optima42";
 
 // SSID and PW for your Router
 String Router_SSID;

@@ -1,24 +1,23 @@
-/**************************************************************************
- This is an example for our Monochrome OLEDs based on SSD1306 drivers
+// /**************************************************************************
+//  This is an example for our Monochrome OLEDs based on SSD1306 drivers
 
- Pick one up today in the adafruit shop!
- ------> http://www.adafruit.com/category/63_98
+//  Pick one up today in the adafruit shop!
+//  ------> http://www.adafruit.com/category/63_98
 
- This example is for a 128x64 pixel display using I2C to communicate
- 3 pins are required to interface (two I2C and one reset).
+//  This example is for a 128x64 pixel display using I2C to communicate
+//  3 pins are required to interface (two I2C and one reset).
 
- Adafruit invests time and resources providing this open
- source code, please support Adafruit and open-source
- hardware by purchasing products from Adafruit!
+//  Adafruit invests time and resources providing this open
+//  source code, please support Adafruit and open-source
+//  hardware by purchasing products from Adafruit!
 
- Written by Limor Fried/Ladyada for Adafruit Industries,
- with contributions from the open source community.
- BSD license, check license.txt for more information
- All text above, and the splash screen below must be
- included in any redistribution.
- **************************************************************************/
+//  Written by Limor Fried/Ladyada for Adafruit Industries,
+//  with contributions from the open source community.
+//  BSD license, check license.txt for more information
+//  All text above, and the splash screen below must be
+//  included in any redistribution.
+//  **************************************************************************/
 
-// #include <SPI.h>
 // #include <Wire.h>
 // #include <Adafruit_GFX.h>
 // #include <Adafruit_SSD1306.h>
@@ -466,16 +465,16 @@
 /****************************************************************************************************************************
   ConfigOnSwitch.ino
   For ESP8266 / ESP32 boards
-  
+
   ESP_WiFiManager is a library for the ESP8266/ESP32 platform (https://github.com/esp8266/Arduino) to enable easy
   configuration and reconfiguration of WiFi credentials using a Captive Portal. Inspired by:
   http://www.esp8266.com/viewtopic.php?f=29&t=2520
   https://github.com/chriscook8/esp-arduino-apboot
   https://github.com/esp8266/Arduino/blob/master/libraries/DNSServer/examples/CaptivePortalAdvanced/
-  
+
   Modified from Tzapu https://github.com/tzapu/WiFiManager
   and from Ken Taylor https://github.com/kentaylor
-  
+
   Built by Khoi Hoang https://github.com/khoih-prog/ESP_WiFiManager
   Licensed under MIT license
   Version: 1.3.0
@@ -518,23 +517,23 @@
  * Example sketch/program showing how to read data from a PICC to serial.
  * --------------------------------------------------------------------------------------------------------------------
  * This is a MFRC522 library example; for further details and other examples see: https://github.com/miguelbalboa/rfid
- * 
+ *
  * Example sketch/program showing how to read data from a PICC (that is: a RFID Tag or Card) using a MFRC522 based RFID
  * Reader on the Arduino SPI interface.
- * 
+ *
  * When the Arduino and the MFRC522 module are connected (see the pin layout below), load this sketch into Arduino IDE
  * then verify/compile and upload it. To see the output: use Tools, Serial Monitor of the IDE (hit Ctrl+Shft+M). When
  * you present a PICC (that is: a RFID Tag or Card) at reading distance of the MFRC522 Reader/PCD, the serial output
  * will show the ID/UID, type and any data blocks it can read. Note: you may see "Timeout in communication" messages
  * when removing the PICC from reading distance too early.
- * 
+ *
  * If your reader supports it, this sketch/program will read all the PICCs presented (that is: multiple tag reading).
  * So if you stack two or more PICCs on top of each other and present them to the reader, it will first output all
  * details of the first and then the next PICC. Note that this may take some time as all data blocks are dumped, so
  * keep the PICCs at reading distance until complete.
- * 
+ *
  * @license Released into the public domain.
- * 
+ *
  * Typical pin layout used:
  * ------------------------------------------------------------------------------------------------------------
  *             MFRC522      NodeMCU Lolin      Arduino       Arduino   Arduino    Arduino          Arduino
@@ -550,6 +549,8 @@
 
 // RST/Reset   RST          D8
 // SPI SS      SDA(SS)      RX
+
+// #define NO_GLOBAL_TWOWIRE 1
 
 #include <Arduino.h>
 #include <SPI.h>
@@ -582,23 +583,55 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 // On an arduino UNO:       A4(SDA), A5(SCL)
 // On an arduino MEGA 2560: 20(SDA), 21(SCL)
 // On an arduino LEONARDO:   2(SDA),  3(SCL), ...
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+#define SCREEN_ADDRESS 0x3C
+// Reset pin # (or -1 if sharing Arduino reset pin)
+#define OLED_RESET -1
 
-bool triggerPortalConfiguration = false;
+// #define SDA_PIN PIN_SD2
+// #define SCL_PIN PIN_SD3
+#define SDA_PIN PIN_D4
+#define SCL_PIN PIN_D3
+#define INTERRUPTION0_PIN PIN_D2
+#define INTERRUPTION1_PIN PIN_D1
 
-void ICACHE_RAM_ATTR handleInterrupt()
+// Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+bool hasInterruption0 = false;
+bool hasInterruption1 = false;
+
+void ICACHE_RAM_ATTR handleInterrupt0()
 {
-  triggerPortalConfiguration = true;
+  printf("In handleInterrupt0\n");
+  hasInterruption0 = true;
 }
+
+void ICACHE_RAM_ATTR handleInterrupt1()
+{
+  printf("In handleInterrupt1\n");
+  hasInterruption1 = true;
+}
+
+Adafruit_SSD1306 *display = NULL;
+
+TwoWire *wire = NULL;
+// Set pins for I2C communication
+// wire.begin(SDA_PIN, SCL_PIN);
 
 void setup()
 {
   // put your setup code here, to run once:
   // initialize the LED digital pin as an output.
   pinMode(PIN_LED, OUTPUT);
-  pinMode(PIN_D1, INPUT_PULLUP);
+  pinMode(INTERRUPTION0_PIN, INPUT_PULLUP);
+
+  // TwoWire wire;
+  // // Set pins for I2C communication
+  // wire.begin(SDA_PIN, SCL_PIN);
+  // Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &wire, OLED_RESET);
+  wire = new TwoWire();
+  wire->begin(SDA_PIN, SCL_PIN);
+  display = new Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, wire, OLED_RESET);
 
   Serial.begin(115200);
   while (!Serial)
@@ -613,7 +646,7 @@ void setup()
   Serial.println(" *** ");
 
   // *** Initialisation of the screen
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
+  if (!display->begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
   {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;)
@@ -622,7 +655,7 @@ void setup()
 
   // Show initial display buffer contents on the screen --
   // the library initializes this with an Adafruit splash screen.
-  display.display();
+  display->display();
 
   // *** Initialisation of RFID reader
   // Init SPI bus
@@ -639,10 +672,13 @@ void setup()
   setupWifi();
 
   // *** Setup interaction button
-  attachInterrupt(digitalPinToInterrupt(PIN_D1), handleInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(INTERRUPTION0_PIN), handleInterrupt0, FALLING);
+  attachInterrupt(digitalPinToInterrupt(INTERRUPTION1_PIN), handleInterrupt1, FALLING);
 
-  display.clearDisplay();
-  display.display();
+  // Clean the screen display
+  display->clearDisplay();
+  display->display();
+
   Serial.println(" *** ");
   Serial.println("End setup");
   Serial.println(" *** ");
@@ -700,11 +736,11 @@ void getnSendUID()
 {
   static ulong checkgetuid_timeout = 0;
 
-  static ulong current_millis;
+  static ulong currentMillis;
 
 #define GETUID_INTERVAL 1000L
 
-  current_millis = millis();
+  currentMillis = millis();
 
   // Reset the loop if no new card present on the sensor/reader.
   // This saves the entire process when idle.
@@ -720,21 +756,176 @@ void getnSendUID()
   }
 
   // Check RFID every GETUID_INTERVAL (1) seconds.
-  if ((current_millis > checkgetuid_timeout) || (checkgetuid_timeout == 0))
+  if ((currentMillis > checkgetuid_timeout) || (checkgetuid_timeout == 0))
   {
     doGetnSendUID();
-    checkgetuid_timeout = current_millis + GETUID_INTERVAL;
+    checkgetuid_timeout = currentMillis + GETUID_INTERVAL;
+  }
+}
+
+// void displayInterruption0()
+// {
+//   static ulong displayTimeout = 0;
+
+//   static ulong currentMillis;
+
+//   static const ulong displayDuration = 3000;
+
+//   currentMillis = millis();
+
+//   if (hasInterruption0)
+//   {
+//     displayTimeout = millis();
+//     hasInterruption0 = false;
+//   }
+
+//   static bool hasPrintMessage = false;
+//   static bool isClean = false;
+
+//   if ((displayTimeout <= currentMillis) && (currentMillis < displayTimeout + displayDuration))
+//   {
+//     if (!hasPrintMessage)
+//     {
+//       display->clearDisplay();
+
+//       display->setTextSize(2);              // Draw 2X-scale
+//       display->setTextColor(SSD1306_WHITE); // Draw white text
+//       display->setCursor(0, 0);             // Start at top-left corner
+//       display->println(F("Interrupt 0"));
+//       display->display();
+//       isClean = false;
+//       hasPrintMessage = true;
+//     }
+//   }
+//   else
+//   {
+//     if (!isClean)
+//     {
+//       display->clearDisplay();
+//       display->display();
+//       isClean = true;
+//       hasPrintMessage = false;
+//     }
+//   }
+// }
+
+// void displayInterruption1()
+// {
+//   static ulong displayTimeout = 0;
+
+//   static ulong currentMillis;
+
+//   static const ulong displayDuration = 3000;
+
+//   currentMillis = millis();
+
+//   if (hasInterruption1)
+//   {
+//     displayTimeout = millis();
+//     hasInterruption1 = false;
+//   }
+
+//   static bool hasPrintMessage = false;
+//   static bool isClean = false;
+
+//   if ((displayTimeout <= currentMillis) && (currentMillis < displayTimeout + displayDuration))
+//   {
+//     if (!hasPrintMessage)
+//     {
+//       display->clearDisplay();
+
+//       display->setTextSize(2);              // Draw 2X-scale
+//       display->setTextColor(SSD1306_WHITE); // Draw white text
+//       display->setCursor(0, 0);             // Start at top-left corner
+//       display->println(F("Interrupt 1"));
+//       display->display();
+//       isClean = false;
+//       hasPrintMessage = true;
+//     }
+//   }
+//   else
+//   {
+//     if (!isClean)
+//     {
+//       display->clearDisplay();
+//       display->display();
+//       isClean = true;
+//       hasPrintMessage = false;
+//     }
+//   }
+// }
+
+ulong displayTimeout = 0;
+ulong currentMillis;
+ulong displayDuration = 3000;
+String messageToPrint;
+
+bool hasPrintMessage = false;
+bool isClean = false;
+
+void displayMessage()
+{
+  currentMillis = millis();
+
+  // if (hasInterruption1)
+  // {
+  //   displayTimeout = millis();
+  //   hasInterruption1 = false;
+  // }
+
+  if ((displayTimeout <= currentMillis) && (currentMillis < displayTimeout + displayDuration))
+  {
+    if (!hasPrintMessage)
+    {
+      display->clearDisplay();
+
+      display->setTextSize(2);              // Draw 2X-scale
+      display->setTextColor(SSD1306_WHITE); // Draw white text
+      display->setCursor(0, 0);             // Start at top-left corner
+      // display->println(F("Interrupt 1"));
+      display->println(messageToPrint.c_str());
+
+      display->display();
+      isClean = false;
+      hasPrintMessage = true;
+    }
+  }
+  else
+  {
+    if (!isClean)
+    {
+      display->clearDisplay();
+      display->display();
+      isClean = true;
+      hasPrintMessage = false;
+    }
   }
 }
 
 void loop()
 {
-  // is configuration portal requested?
-  if (triggerPortalConfiguration)
+  if (hasInterruption0)
   {
-    triggerPortalConfiguration = false;
-    requestPortalConfiguration();
+    hasInterruption0 = false;
+
+    displayTimeout = millis();
+    displayDuration = 3000;
+    messageToPrint = "Interru. 0";
+    hasPrintMessage = false;
+    // requestPortalConfiguration();
   }
+
+  if (hasInterruption1)
+  {
+    hasInterruption1 = false;
+
+    displayTimeout = millis();
+    displayDuration = 1000;
+    messageToPrint = "Interru. 1\n  AGAIN";
+    hasPrintMessage = false;
+  }
+
+  displayMessage();
 
   // put your main code here, to run repeatedly
   checkWifiStatus();
