@@ -182,14 +182,15 @@ String getUID(MFRC522::Uid *uid)
   return res;
 }
 
-const String SERVER_IP("192.168.8.100:3000");
+// const String SERVER_IP("192.168.8.100:3000");
+const String SERVER_IP("192.168.43.172:3000");
 
 void doGetnSendUID()
 {
   WiFiClient client;
   HTTPClient http;
 
-  Serial.print("[HTTP] begin...\n");
+  Serial.printf("[HTTP] begin...\n");
   // configure traged server and url
   String serverEndPoint = "http://" + SERVER_IP + "/postplain/";
   Serial.print("[HTTP] serverEndPoint: " + serverEndPoint + "\n");
@@ -198,22 +199,25 @@ void doGetnSendUID()
   http.addHeader("Content-Type", "application/json");
 
   // start connection and send HTTP header and body
-  String message = "{\"uid\":" + getUID(&(mfrc522.uid)) + "}";
-  Serial.print("[HTTP] message: " + message + "\n");
+  String message = "{\"uid\":\"" + getUID(&(mfrc522.uid)) + "\"}";
+  printf("[HTTP] message: %s\n", message.c_str());
   int httpCode = http.POST(message);
-  String payload = http.getString();
-  Serial.print("[HTTP] payload: " + payload + "\n");
 
   // httpCode will be negative on error
   if (httpCode > 0)
   {
     // HTTP header has been send and Server response header has been handled
+    String payload = http.getString();
+    printf("[HTTP] payload: %s\n", payload.c_str());
     Serial.printf("[HTTP] POST succeeded\n");
   }
   else
   {
-    Serial.printf("[POST FAILED] httpCode: %d\n", httpCode);
-    Serial.printf("[POST FAILED] error: %s\n", http.errorToString(httpCode).c_str());
+    // HTTP header has been send and Server response header has been handled
+    String payload = http.getString();
+    printf("[POST FAILED] payload: %s\n", payload.c_str());
+    printf("[POST FAILED] httpCode: %d\n", httpCode);
+    printf("[POST FAILED] error: %s\n", http.errorToString(httpCode).c_str());
   }
 
   http.end();

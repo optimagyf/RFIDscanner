@@ -361,7 +361,7 @@ void setupWifi()
 
   // Use only to erase stored WiFi Credentials
   //resetSettings();
-  //ESP_wifiManager.resetSettings();
+  // ESP_wifiManager.resetSettings();
 
   //set custom ip for portal
   ESP_wifiManager.setAPStaticIPConfig(IPAddress(192, 168, 1, 1), IPAddress(192, 168, 1, 1), IPAddress(255, 255, 255, 0));
