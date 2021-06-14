@@ -182,8 +182,8 @@ String getUID(MFRC522::Uid *uid)
   return res;
 }
 
-// const String SERVER_IP("192.168.8.100:3000");
-const String SERVER_IP("192.168.43.172:3000");
+const String SERVER_IP("192.168.1.19:3000");
+// const String SERVER_IP("192.168.43.172:3000");
 
 void doGetnSendUID()
 {
@@ -210,6 +210,7 @@ void doGetnSendUID()
     String payload = http.getString();
     printf("[HTTP] payload: %s\n", payload.c_str());
     Serial.printf("[HTTP] POST succeeded\n");
+    pushMessage(3000, "Successfully scan\n" + getUID(&(mfrc522.uid)));
   }
   else
   {
@@ -218,6 +219,7 @@ void doGetnSendUID()
     printf("[POST FAILED] payload: %s\n", payload.c_str());
     printf("[POST FAILED] httpCode: %d\n", httpCode);
     printf("[POST FAILED] error: %s\n", http.errorToString(httpCode).c_str());
+    pushMessage(3000, "Fail to scan\n" + getUID(&(mfrc522.uid)));
   }
 
   http.end();
@@ -256,23 +258,18 @@ void getnSendUID()
 
 void triggerInterruption0()
 {
-  displayTimeout = millis();
-  displayDuration = 30000;
-  messageToPrint = "Interru. 0";
-  hasPrintMessage = false;
-  // requestPortalConfiguration();
+  pushMessage(1000, "Interru. 0");
 }
 
 void triggerInterruption1()
 {
-  displayTimeout = millis();
-  displayDuration = 30000;
-  messageToPrint = "Interru. 1\n  AGAIN";
-  hasPrintMessage = false;
+  pushMessage(3000, "Interru. 1\n  AGAIN");
 }
 
 void loop()
 {
+  loopMessage();
+
   if (hasInterruption0)
   {
     hasInterruption0 = false;
@@ -284,8 +281,6 @@ void loop()
     hasInterruption1 = false;
     triggerInterruption1();
   }
-
-  displayMessage();
 
   checkWifiStatus();
 

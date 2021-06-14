@@ -8,16 +8,12 @@
 #include <Adafruit_I2CDevice.h>
 
 void initScreen();
-void displayMessage();
+void pushMessage(ulong displayDuration_, String messageToDisplay_);
+void loopMessage();
 
 // Externalised variable
 extern Adafruit_SSD1306 *display;
 extern TwoWire *wire;
-
-extern ulong displayTimeout;
-extern ulong displayDuration;
-extern String messageToPrint;
-extern bool hasPrintMessage;
 // <----- Externalised variable
 
 #endif // _DISPLAY_H

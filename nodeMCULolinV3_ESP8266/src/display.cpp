@@ -21,16 +21,7 @@
 // Externalised variable
 Adafruit_SSD1306 *display = NULL;
 TwoWire *wire = NULL;
-
-ulong displayTimeout = 0;
-ulong displayDuration = 3000;
-String messageToPrint;
-bool hasPrintMessage = false;
 // <----- Externalised variable
-
-bool isClean = false;
-
-ulong currentMillis;
 
 // *** Initialise the screen
 void initScreen()
@@ -49,11 +40,27 @@ void initScreen()
   }
 }
 
-void displayMessage()
+ulong displayInit = 0;
+ulong displayDuration2 = 0;
+String messageToDisplay = "";
+bool hasPrintMessage = false;
+bool isClean = false;
+
+void pushMessage(ulong displayDuration_, String messageToDisplay_)
+{
+  displayInit = millis();
+  hasPrintMessage = false;
+  displayDuration2 = displayDuration_;
+  messageToDisplay = messageToDisplay_;
+}
+
+ulong currentMillis;
+
+void loopMessage()
 {
   currentMillis = millis();
 
-  if ((displayTimeout <= currentMillis) && (currentMillis < displayTimeout + displayDuration))
+  if ((displayInit <= currentMillis) && (currentMillis < displayInit + displayDuration2))
   {
     if (!hasPrintMessage)
     {
@@ -62,8 +69,7 @@ void displayMessage()
       display->setTextSize(2);              // Draw 2X-scale
       display->setTextColor(SSD1306_WHITE); // Draw white text
       display->setCursor(0, 0);             // Start at top-left corner
-      // display->println(F("Interrupt 1"));
-      display->println(messageToPrint.c_str());
+      display->println(messageToDisplay.c_str());
 
       display->display();
       isClean = false;
