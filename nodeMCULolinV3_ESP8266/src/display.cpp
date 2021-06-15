@@ -40,27 +40,27 @@ void initScreen()
   }
 }
 
-ulong displayInit = 0;
-ulong displayDuration2 = 0;
-String messageToDisplay = "";
-bool hasPrintMessage = false;
-bool isClean = false;
+static ulong displayInit = 0;
+static ulong displayDuration = 0;
+static String messageToDisplay = "";
+static bool hasPrintMessage = false;
+static bool isClean = false;
 
 void pushMessage(ulong displayDuration_, String messageToDisplay_)
 {
   displayInit = millis();
   hasPrintMessage = false;
-  displayDuration2 = displayDuration_;
+  displayDuration = displayDuration_;
   messageToDisplay = messageToDisplay_;
 }
 
-ulong currentMillis;
+static ulong currentMillis;
 
 void loopMessage()
 {
   currentMillis = millis();
 
-  if ((displayInit <= currentMillis) && (currentMillis < displayInit + displayDuration2))
+  if ((displayInit <= currentMillis) && (currentMillis < displayInit + displayDuration))
   {
     if (!hasPrintMessage)
     {

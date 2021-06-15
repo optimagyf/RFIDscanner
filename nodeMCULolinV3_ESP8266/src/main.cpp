@@ -94,6 +94,7 @@
 #include "display.h"
 #include "pinLayout.h"
 #include "wifiUtils.h"
+#include "menu.h"
 
 #define SS_PIN PIN_D8
 #define RST_PIN PIN_RX
@@ -109,13 +110,11 @@ bool hasInterruption1 = false;
 
 void ICACHE_RAM_ATTR handleInterrupt0()
 {
-  printf("In handleInterrupt0\n");
   hasInterruption0 = true;
 }
 
 void ICACHE_RAM_ATTR handleInterrupt1()
 {
-  printf("In handleInterrupt1\n");
   hasInterruption1 = true;
 }
 
@@ -258,17 +257,20 @@ void getnSendUID()
 
 void triggerInterruption0()
 {
-  pushMessage(1000, "Interru. 0");
+  // pushMessage(1000, "Interru. 0");
+  nextMenu();
 }
 
 void triggerInterruption1()
 {
-  pushMessage(3000, "Interru. 1\n  AGAIN");
+  // pushMessage(3000, "Interru. 1\n  AGAIN");
+  enter();
 }
 
 void loop()
 {
   loopMessage();
+  loopMenu();
 
   if (hasInterruption0)
   {
