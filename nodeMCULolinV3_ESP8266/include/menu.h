@@ -4,7 +4,7 @@
 #define _MENU_H
 
 void nextMenu();
-void enter();
+void validate();
 void loopMenu();
 
 #endif // _MENU_H

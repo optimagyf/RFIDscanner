@@ -264,7 +264,7 @@ void triggerInterruption0()
 void triggerInterruption1()
 {
   // pushMessage(3000, "Interru. 1\n  AGAIN");
-  enter();
+  validate();
 }
 
 void loop()
