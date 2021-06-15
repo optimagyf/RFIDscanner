@@ -108,6 +108,8 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 bool hasInterruption0 = false;
 bool hasInterruption1 = false;
 
+String connectedSsid = "";
+
 void ICACHE_RAM_ATTR handleInterrupt0()
 {
   hasInterruption0 = true;
@@ -187,6 +189,8 @@ const String SERVER_IP("192.168.1.19:3000");
 void doGetnSendUID()
 {
   WiFiClient client;
+  // printf("client.status() %u8\n", client.status());
+  printf("WiFi.SSID() %s\n", WiFi.SSID().c_str());
   HTTPClient http;
 
   Serial.printf("[HTTP] begin...\n");

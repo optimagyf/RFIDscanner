@@ -250,12 +250,12 @@ void requestPortalConfiguration()
 
   // New from v1.1.1
 #if USING_CORS_FEATURE
-  ESP_wifiManager.setCORSHeader("Your Access-Control-Allow-Origin");
+  ESP_wifiManager.setCORSHeader("*");
 #endif
 
   //Check if there is stored WiFi router/password credentials.
   //If not found, device will remain in configuration mode until switched off via webserver.
-  Serial.print("Opening configuration portal. ");
+  Serial.print("Opening configuration portal.");
   Router_SSID = ESP_wifiManager.WiFi_SSID();
   Router_Pass = ESP_wifiManager.WiFi_Pass();
 
@@ -319,6 +319,8 @@ void requestPortalConfiguration()
 
   digitalWrite(PIN_LED, LED_OFF); // Turn led off as we are not in configuration mode.
 }
+
+extern String connectedSsid;
 
 void setupWifi()
 {
@@ -499,6 +501,8 @@ void setupWifi()
   {
     Serial.print("connected. Local IP: ");
     Serial.println(WiFi.localIP());
+
+    connectedSsid = WiFi.SSID();
   }
   else
   {

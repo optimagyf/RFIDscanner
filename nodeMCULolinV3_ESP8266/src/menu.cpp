@@ -8,6 +8,8 @@ static bool isReset = true;
 
 static ulong menuDuration = 10000;
 
+extern String connectedSsid;
+
 int getMenuWidth(int menuState[2], int cursor)
 {
   int res = 0;
@@ -55,8 +57,10 @@ void displayMenu()
       switch (menuState[cursor])
       {
       case 0:
-        pushMessage(menuDuration, "Connexion?");
+      {
+        pushMessage(menuDuration, "SSID\n" + connectedSsid);
         break;
+      }
       case 1:
         pushMessage(menuDuration, "Adresse serveur?");
         break;
